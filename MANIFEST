@@ -1,0 +1,8 @@
+Changes
+Makefile.PL
+MANIFEST
+ppport.h
+README
+Trim.xs
+t/DFA-Trim.t
+lib/DFA/Trim.pm

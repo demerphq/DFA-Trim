@@ -1,0 +1,6 @@
+Revision history for Perl extension DFA::Trim.
+
+0.01  Wed Jun  2 15:45:29 2021
+	- original version; created by h2xs 1.23 with options
+		-cf -n DFA::Trim
+
