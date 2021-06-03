@@ -11,7 +11,7 @@ my @extra= qw(separate loop2 trimmed);
 my %extra= map { $_ => 1 } @extra;
 my $bm_time= $ENV{CHECK} ? 100000 : -1;
 
-my @keys= ($base,@extra);
+my @sub_names= ($base,@extra);
 
 $|++;
 printf "%6s %6s %1s %1s %4s %3s %3s|%10s|".("%10s %10s|" x @extra)."\n", 
@@ -44,12 +44,19 @@ sub loop2 {
     return $str;
 }
 
+my @all_keys; # each element is a hash of the conditions (keys) for the test
+my %all_rps;  # each hash key contains an array of per second execution time.
 
-foreach my $ns_len (1,2,5,10,25,100) {
-    foreach my $sp_len (1,2,5,10,25,100) {
-        foreach my $segments (1,10,100,1000) {
-            foreach my $unicode (0,1) {
-                foreach my $as_sub (0,1) {
+my @try_lens= (1,10,100);
+my @try_segments= (1,10,100);
+my @try_unicode=(0,1);
+my @try_as_sub=(0,1);
+
+foreach my $ns_len (@try_lens) {
+    foreach my $sp_len (@try_lens) {
+        foreach my $segments (@try_segments) {
+            foreach my $unicode (@try_unicode) {
+                foreach my $as_sub (@try_as_sub) {
                     my $descr= "as_sub: $as_sub unicode: $unicode segments: $segments non-space length: $ns_len space length: $sp_len";
                     my $sp= $unicode ? "\x{1680}" : " ";
                     my $ns= $unicode ? "\x{100}" : "x";
@@ -114,18 +121,30 @@ foreach my $ns_len (1,2,5,10,25,100) {
 
                     my $r= timethese($bm_time, \%run, "none");
                     my @key= ($blen,$clen,$as_sub,$unicode,$segments,$ns_len,$sp_len);
+                    my %key= (
+                              blen=>$blen,
+                              clen=>$clen,
+                              as_sub=>$as_sub,
+                              unicode=>$unicode, 
+                              segments=>$segments, 
+                              ns_len=>$ns_len, 
+                              sp_len=>$sp_len,
+                              const=>1,
+                          );
+                    push @all_keys,\%key;
                     my %rps;
                     my $max;
                     my $max_name;
-                    foreach my $name (@keys) {
+                    foreach my $name (@sub_names) {
                         $rps{$name}= $r->{$name}->iters/$r->{$name}->real;
+                        push @{$all_rps{$name}}, $rps{$name};
                         if (!defined $max or $max < $rps{$name}) {
                             $max= $rps{$name};
                             $max_name= $name;
                         }
                     }
                     my @data;
-                    foreach my $name (@keys) {
+                    foreach my $name (@sub_names) {
                         my $fmt= $name eq $max_name ? "+" : "";
                         push @data, sprintf "%$fmt.1f",$rps{$name};
                         push @data, sprintf "%$fmt.1f",$rps{$name}/$rps{naive}*100
@@ -147,4 +166,14 @@ foreach my $ns_len (1,2,5,10,25,100) {
             }
         }
     }
+}
+use Statistics::Regression;
+foreach my $name (@sub_names) {
+    my $r= Statistics::Regression->new($name, ['const','segments','ns_len','sp_len','as_sub','unicode','blen','clen']);
+    foreach my $i (0..$#all_keys) {
+        my $val= $all_rps{$name}[$i];
+        my $key= $all_keys[$i];
+        $r->include($all_rps{$name}[$i],$all_keys[$i]);
+    }
+    $r->print();
 }

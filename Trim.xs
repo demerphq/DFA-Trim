@@ -152,7 +152,7 @@ MODULE = DFA::Trim		PACKAGE = DFA::Trim
 SV *
 ltrimmed(str_sv)
 SV *str_sv
-PROTOTYPE: $;$
+PROTOTYPE: $
 CODE:
     if (SvPOK(str_sv)) {
         STRLEN str_len;
@@ -173,7 +173,7 @@ OUTPUT:
 SV *
 rtrimmed(str_sv)
 SV *str_sv
-PROTOTYPE: $;$
+PROTOTYPE: $
 CODE:
     if (SvPOK(str_sv)) {
         STRLEN str_len;
@@ -197,7 +197,7 @@ OUTPUT:
 SV *
 trimmed(str_sv)
 SV *str_sv
-PROTOTYPE: $;$
+PROTOTYPE: $
 CODE:
     if (SvPOK(str_sv)) {
         STRLEN str_len;
