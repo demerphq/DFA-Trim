@@ -20,6 +20,7 @@ our %EXPORT_TAGS = ( 'all' => [ qw(
     ltrimmed
     rtrimmed
     trimmed
+    fast_trimmed
 ) ] );
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );

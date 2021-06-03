@@ -4,20 +4,20 @@ use Benchmark qw(cmpthese timethese :hireswallclock);
 use Test::More;
 use blib;
 use Data::Dumper;
-use DFA::Trim qw(trimmed);
+use DFA::Trim qw(trimmed fast_trimmed);
 use Char::Replace qw(trim);
 my $base= 'naive';
-my @extra= qw(separate loop2 trimmed);
+my @extra= qw(trimmed ftrimmed);
 my %extra= map { $_ => 1 } @extra;
 my $bm_time= $ENV{CHECK} ? 100000 : -1;
 
 my @sub_names= ($base,@extra);
 
 $|++;
-printf "%6s %6s %1s %1s %4s %3s %3s|%10s|".("%10s %10s|" x @extra)."\n", 
+printf "%6s %6s %1s %1s %4s %3s %3s|%12s|".("%12s %12s|" x @extra)."\n", 
     "blen","clen","S","U", "reps","ns","sp", $base."/s", map { $_."/s" , "as pct nv" } @extra;
-printf "%.6s-%.6s-%.1s-%.1s-%.4s-%.3s-%.3s+%.10s+".("%.10s-%.10s+" x @extra)."\n",
-    ("-" x 10) x (8+2*@extra);
+printf "%.6s-%.6s-%.1s-%.1s-%.4s-%.3s-%.3s+%.12s+".("%.12s-%.12s+" x @extra)."\n",
+    ("-" x 12) x (8+2*@extra);
 
 sub naive {
     my ($str)= @_;
@@ -63,7 +63,7 @@ foreach my $ns_len (@try_lens) {
                     my $string= ($sp x $sp_len) . ((($ns x $ns_len) . ($sp x $sp_len))x$segments);
                     my $utf8_string= $string;
                     utf8::encode($utf8_string);
-                    my ($naive,$separate,$loop2,$trimmed,$trim);
+                    my ($naive,$separate,$loop2,$trimmed,$trim,$ftrimmed);
                     #diag "timing $descr\n";
                     my $clen= length $string;
                     my $blen= length $utf8_string;
@@ -106,6 +106,10 @@ foreach my $ns_len (@try_lens) {
                             return;
                         };
                     }
+                    $sub{ftrimmed}= sub {
+                        $ftrimmed= fast_trimmed($string);
+                        return;
+                    };
                     $sub{trimmed}= sub {
                         $trimmed= trimmed($string);
                         return;
@@ -129,7 +133,7 @@ foreach my $ns_len (@try_lens) {
                               segments=>$segments, 
                               ns_len=>$ns_len, 
                               sp_len=>$sp_len,
-                              const=>1,
+                              const =>1,
                           );
                     push @all_keys,\%key;
                     my %rps;
@@ -150,7 +154,7 @@ foreach my $ns_len (@try_lens) {
                         push @data, sprintf "%$fmt.1f",$rps{$name}/$rps{naive}*100
                             if $name ne "naive";
                     }
-                    printf "%6d %6d %1d %1d %4d %3d %3d|%10s|". ("%10s %10s|" x @extra) . "\n", @key, @data;
+                    printf "%6d %6d %1d %1d %4d %3d %3d|%12s|". ("%12s %12s|" x @extra) . "\n", @key, @data;
                     if ($ENV{CHECK}) {
                         ok($naive,"naive is true");
                         ok($naive eq $separate,"naive and separate are the same")
@@ -161,6 +165,8 @@ foreach my $ns_len (@try_lens) {
                             if $extra{trim};
                         ok($naive eq $trimmed,"naive and DFA::Trim::trimmed are the same")
                             if $extra{trimmed};
+                        ok($naive eq $ftrimmed,"naive and DFA::Trim::fast_trimmed are the same")
+                            if $extra{ftrimmed};
                     }
                 }
             }
