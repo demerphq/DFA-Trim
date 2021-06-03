@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 use Data::Dumper;
+use Text::Wrap qw(wrap);
 
 sub add_trie {
     my ($str,$root)= @_;
@@ -44,7 +45,7 @@ sub transition_array {
     my @offset=(0,0);
 
     push @transition, @{$states->[0]};
-    push @owner, map { $_ ? 1 : 0 } @transition;
+    push @owner, map { $_ ? 1 : 0 } @{$states->[0]};
 
     foreach my $state_idx (1..$#$states) {
         my $state= $states->[$state_idx];
@@ -64,7 +65,8 @@ sub transition_array {
             $transition[$offset+$i]||=0;
             $owner[$offset+$i]||=0;
             if ($state->[$i]) {
-                die "bad mojo" if $transition[$offset+$i] or $owner[$offset+$i];
+                die "bad mojo: offset=$offset i=$i", Dumper(\@transition,\@owner) 
+                    if $transition[$offset+$i] or $owner[$offset+$i];
                 $transition[$offset+$i]= $state->[$i];
                 $owner[$offset+$i]= $state_idx+1;
             }
@@ -76,7 +78,7 @@ sub transition_array {
 sub array_decl {
     my ($type,$name,$array)= @_;
     my $len= 0+@$array;
-    return "const $type $name\[$len]= { " . join(", ", @$array). " };\n";
+    return wrap "", "    ", "const $type $name\[$len]= { " . join(", ", @$array). " };\n";
 }
 sub print_decls {
     my ($root,$type,$prefix)=@_;
@@ -92,18 +94,20 @@ my @cp= (9,10,11,12,13,32,5760,8192,8193,8194,8195,8196,8197,8198,8199,8200,8201
 my $all_cp;
 my %trie;
 my %rtrie;
+my @ascii= (0) x 256;
 foreach my $cp (@cp) {
     my $char= chr($cp);
+    $ascii[$cp]= 1 if $cp < 256;
     utf8::encode($char);
     $all_cp .= $char;
     add_trie($char,\%trie);
     add_trie(scalar reverse($char),\%rtrie);
-    
 }
 
 print_includes();
 print_decls(\%trie,uint16_t => "lr");
 print_decls(\%rtrie,uint16_t => "rl");
+print array_decl(uint8_t => "latin_1", \@ascii);
 print_subs($all_cp);
 
 sub print_subs {
@@ -111,6 +115,7 @@ sub print_subs {
     $all_cp= '"'.join("", map { sprintf "\\%03o", ord $_ } split //, $all_cp). '"';
 
 print <<"END_OF_C";
+
 char * 
 find_ltrim_pos(char *start, char *end) {
     uint16_t state=1;

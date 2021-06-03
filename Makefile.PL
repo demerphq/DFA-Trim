@@ -2,6 +2,8 @@ use 5.024001;
 use ExtUtils::MakeMaker;
 # See lib/ExtUtils/MakeMaker.pm for details of how to influence
 # the contents of the Makefile that is written.
+my $OPTIMIZE          = $ENV{OPTIMIZE} ? $ENV{OPTIMIZE} : $ENV{DEBUG} ? '-g' : '-O3';
+print "optimization level: $OPTIMIZE\n";
 WriteMakefile(
     NAME              => 'DFA::Trim',
     VERSION_FROM      => 'lib/DFA/Trim.pm', # finds $VERSION, requires EU::MM from perl >= 5.5
@@ -16,4 +18,6 @@ WriteMakefile(
     INC               => '-I.', # e.g., '-I. -I/usr/include/other'
 	# Un-comment this if you add C files to link with later:
     # OBJECT            => '$(O_FILES)', # link all the C files too
+    OPTIMIZE          => $OPTIMIZE,
 );
+
