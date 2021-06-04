@@ -47,8 +47,8 @@ sub loop2 {
 my @all_keys; # each element is a hash of the conditions (keys) for the test
 my %all_rps;  # each hash key contains an array of per second execution time.
 
-my @try_lens= (1,10,100);
-my @try_segments= (1,10,100);
+my @try_lens= (1,5,10,50,100);
+my @try_segments= (1,5,10,50,100);
 my @try_unicode=(0,1);
 my @try_as_sub=(0,1);
 
